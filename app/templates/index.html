@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Placement Predictor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a56d4;
+            --success: #06d6a0; /* Softer Green */
+            --danger: #ef476f;  /* Softer Red */
+            --light: #f8f9fa;
+            --dark: #212529;
+            --border: #dee2e6;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container { max-width: 800px; width: 100%; margin: 0 auto; }
+        
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        .header {
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 15px; }
+        
+        .form-container { padding: 40px; }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark); }
+        
+        .input-wrapper { position: relative; }
+        .input-wrapper i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #6c757d; }
+        
+        input {
+            width: 100%;
+            padding: 12px 15px 12px 45px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: var(--light);
+        }
+        
+        input:focus { outline: none; border-color: var(--primary); background: white; }
+        
+        .range-indicator { display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.85rem; color: #6c757d; }
+        
+        .btn {
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(67, 97, 238, 0.3); }
+        
+        /* Result Styles */
+        .result-container {
+            padding: 30px;
+            background: var(--light);
+            border-radius: 15px;
+            margin-top: 20px;
+            text-align: center;
+            border-left: 5px solid var(--primary);
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .prediction {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 10px 0;
+            padding: 10px 30px;
+            border-radius: 50px;
+            display: inline-block;
+        }
+        
+        .placed {
+            color: #06694c;
+            background: rgba(6, 214, 160, 0.2);
+            border: 1px solid var(--success);
+        }
+        
+        /* FIXED: Improved the red color issues */
+        .not-placed {
+            color: #b01438;
+            background: rgba(239, 71, 111, 0.15);
+            border: 1px solid var(--danger);
+        }
+        
+        .probability-meter { margin: 20px auto; width: 80%; }
+        
+        .meter-bar {
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .meter-fill {
+            height: 100%;
+            /* Gradient changes based on result via JS */
+            background: var(--primary); 
+            border-radius: 5px;
+            transition: width 1s ease, background 0.5s ease;
+            width: 0%;
+        }
+        
+        .stats { display: flex; justify-content: center; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
+        
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            min-width: 120px;
+        }
+        .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 0.9rem; color: #6c757d; margin-top: 5px; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 2rem; }
+            .form-container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1><i class="fas fa-graduation-cap"></i> Student Placement Predictor</h1>
+                <p>Enter your academic details to predict placement probability</p>
+            </div>
+            
+            <div class="form-container">
+                <form id="predictionForm" onsubmit="return false;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label><i class="fas fa-calculator"></i> Mathematics Score</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-percentage"></i>
+                                <input type="number" id="maths" placeholder="Enter marks (0-100)" min="0" max="100" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fab fa-python"></i> Python Programming</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-code"></i>
+                                <input type="number" id="python" placeholder="Enter marks (0-100)" min="0" max="100" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-database"></i> SQL Database</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-table"></i>
+                                <input type="number" id="sql" placeholder="Enter marks (0-100)" min="0" max="100" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-comments"></i> Communication Skills</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-microphone"></i>
+                                <input type="number" id="comm" placeholder="Enter score (0-100)" min="0" max="100" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-project-diagram"></i> Mini Projects</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-tasks"></i>
+                                <input type="number" id="mini" placeholder="Completed (0-20)" min="0" max="20" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-briefcase"></i> Placement Readiness</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-chart-line"></i>
+                                <input type="number" id="readiness" placeholder="Readiness score (0-100)" min="0" max="100" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar-check"></i> Attendance</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-user-check"></i>
+                                <input type="number" id="attendance" placeholder="Attendance % (0-100)" min="0" max="100" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn">
+                        <i class="fas fa-brain"></i> Predict Placement Probability
+                    </button>
+                </form>
+                
+                <div id="resultSection" class="result-container">
+                    <h2 class="result-title">Prediction Result</h2>
+                    
+                    <div id="predictionBadge" class="prediction">
+                        </div>
+                    
+                    <div class="probability-meter">
+                        <div class="meter-label">
+                            <span>Low Chance</span>
+                            <span>High Chance</span>
+                        </div>
+                        <div class="meter-bar">
+                            <div id="meterFill" class="meter-fill"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stats">
+                        <div class="stat-box">
+                            <div id="probValue" class="stat-value">0%</div>
+                            <div class="stat-label">Probability</div>
+                        </div>
+                        <div class="stat-box">
+                            <div id="confidenceValue" class="stat-value">-</div>
+                            <div class="stat-label">Confidence</div>
+                        </div>
+                    </div>
+                    
+                    <div id="recommendation" style="margin-top: 20px; color: #6c757d; font-size: 0.9rem;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Visual Input Feedback 
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('input', function() {
+                const min = parseInt(this.min);
+                const max = parseInt(this.max);
+                let value = parseInt(this.value) || 0;
+                
+                // Enforce limits
+                if (value > max) this.value = max;
+                if (value < min) this.value = min;
+
+                // Update gradient background
+                const percentage = ((value - min) / (max - min)) * 100;
+                this.style.background = `linear-gradient(to right, #eef2ff ${percentage}%, #f8f9fa ${percentage}%)`;
+                this.style.borderColor = percentage > 0 ? '#4361ee' : '#dee2e6';
+            });
+        });
+
+        // 2. Handle Prediction Logic (JavaScript instead of Python)
+        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = this.querySelector('button[type="submit"]');
+            
+            // Loading State
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+            btn.disabled = true;
+
+            // Gather Data
+            const maths = parseInt(document.getElementById('maths').value);
+            const python = parseInt(document.getElementById('python').value);
+            const sql = parseInt(document.getElementById('sql').value);
+            const comm = parseInt(document.getElementById('comm').value);
+            const projects = parseInt(document.getElementById('mini').value) * 5; // Scale project to 100
+            const readiness = parseInt(document.getElementById('readiness').value);
+            
+            // Simple Calculation Logic (Average)
+            const totalScore = (maths + python + sql + comm + projects + readiness) / 6;
+            
+            // Simulation delay
+            setTimeout(() => {
+                displayResult(totalScore);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 1000);
+        });
+
+        function displayResult(score) {
+            const resultSection = document.getElementById('resultSection');
+            const badge = document.getElementById('predictionBadge');
+            const meterFill = document.getElementById('meterFill');
+            const probValue = document.getElementById('probValue');
+            const confValue = document.getElementById('confidenceValue');
+            const rec = document.getElementById('recommendation');
+
+            resultSection.style.display = 'block';
+
+            // Logic: If score > 60, they are Placed
+            if (score >= 60) {
+                // PLACED (Green)
+                badge.className = 'prediction placed';
+                badge.innerHTML = '<i class="fas fa-check-circle"></i> Placed';
+                meterFill.style.background = 'linear-gradient(to right, #4cc9f0, #4361ee)';
+                rec.innerHTML = '<i class="fas fa-lightbulb"></i> <strong>Recommendation:</strong> Great job! Start applying to companies.';
+            } else {
+                // NOT PLACED (Red - but fixed styling)
+                badge.className = 'prediction not-placed';
+                badge.innerHTML = '<i class="fas fa-times-circle"></i> Not Placed';
+                meterFill.style.background = 'linear-gradient(to right, #ef476f, #b01438)';
+                rec.innerHTML = '<i class="fas fa-lightbulb"></i> <strong>Recommendation:</strong> Focus on improving your Python and SQL skills.';
+            }
+
+            // Update stats
+            meterFill.style.width = score + '%';
+            probValue.textContent = score.toFixed(1) + '%';
+            
+            if(score > 80) confValue.textContent = "Excellent";
+            else if(score > 60) confValue.textContent = "Good";
+            else confValue.textContent = "Moderate";
+        }
+    </script>
+</body>
+</html>
